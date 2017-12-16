@@ -33,25 +33,25 @@ class CSVGenerator:
     def generate_rating_buckets_csv(self):
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             csvwriter = csv.writer(f)
-            columns = ['Rating']
-            for location in self.locations:
-                columns.append(location)
-            csvwriter.writerow(columns)
 
+            columns = ['Rating']
             results = {}
             for location in self.locations:
+                columns.append(location)
                 params = dict(self.PALCES_QUERY_PARAMS, location=location)
                 places_response = requests.get(self.GOOGLE_PLACES_API, params=params).content.decode('utf-8')
                 places = json.loads(places_response)
                 rating_buckets = {}
                 for place in places['results']:
                     if place['rating'] > 3:
-                        if str(math.floor(place['rating'])) in rating_buckets:
-                            rating_buckets[str(math.floor(place['rating']))] += 1
+                        rating = str(math.floor(place['rating']))
+                        if rating in rating_buckets:
+                            rating_buckets[rating] += 1
                         else:
-                            rating_buckets[str(math.floor(place['rating']))] = 1
+                            rating_buckets[rating] = 1
                 results[location] = rating_buckets
 
+            csvwriter.writerow(columns)
             for rating in ['3', '4', '5']:
                 row = [rating]
                 for bucket in results.values():
