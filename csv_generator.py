@@ -42,13 +42,12 @@ class CSVGenerator:
                 places_response = requests.get(self.GOOGLE_PLACES_API, params=params).content.decode('utf-8')
                 places = json.loads(places_response)
                 rating_buckets = {}
-                for place in places['results']:
-                    if place['rating'] > 3:
-                        rating = str(math.floor(place['rating']))
-                        if rating in rating_buckets:
-                            rating_buckets[rating] += 1
-                        else:
-                            rating_buckets[rating] = 1
+                for place in [place for place in places['results'] if place['rating'] > 3]:
+                    rating = str(math.floor(place['rating']))
+                    if rating in rating_buckets:
+                        rating_buckets[rating] += 1
+                    else:
+                        rating_buckets[rating] = 1
                 results[location] = rating_buckets
 
             csvwriter.writerow(columns)
