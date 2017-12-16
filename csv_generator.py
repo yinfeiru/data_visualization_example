@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 import requests
 import tempfile
@@ -12,10 +13,11 @@ class CSVGenerator:
         'type': 'restaurant',
     }
 
-    def __init__(self, location):
-        self.location = location
+    def __init__(self, locations):
+        self.locations = locations
 
-    def generate_csv(self):
+    # TODO make generate_restaurant_ratings_csv work with a list of locations
+    def generate_restaurant_ratings_csv(self):
         params = dict(self.PALCES_QUERY_PARAMS, location=self.location)
         places_response = requests.get(self.GOOGLE_PLACES_API, params=params).content.decode('utf-8')
         places = json.loads(places_response)
@@ -26,6 +28,36 @@ class CSVGenerator:
                 if place['rating'] > 3:
                     csvwriter.writerow([place['name'], place['rating']])
 
+        return f.name
+
+    def generate_rating_buckets_csv(self):
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            csvwriter = csv.writer(f)
+            columns = ['Rating']
+            for location in self.locations:
+                columns.append(location)
+            csvwriter.writerow(columns)
+
+            results = {}
+            for location in self.locations:
+                params = dict(self.PALCES_QUERY_PARAMS, location=location)
+                places_response = requests.get(self.GOOGLE_PLACES_API, params=params).content.decode('utf-8')
+                places = json.loads(places_response)
+                rating_buckets = {}
+                for place in places['results']:
+                    if place['rating'] > 3:
+                        if str(math.floor(place['rating'])) in rating_buckets:
+                            rating_buckets[str(math.floor(place['rating']))] += 1
+                        else:
+                            rating_buckets[str(math.floor(place['rating']))] = 1
+                results[location] = rating_buckets
+
+            for rating in ['3', '4', '5']:
+                row = [rating]
+                for bucket in results.values():
+                    if rating in bucket:
+                        row.append(str(bucket[rating]))
+                csvwriter.writerow(row)
         return f.name
 
 if __name__ == '__main__':
