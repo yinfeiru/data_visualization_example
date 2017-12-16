@@ -34,23 +34,20 @@ class CSVGenerator:
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             csvwriter = csv.writer(f)
 
-            columns = ['Rating']
+            headers = ['Rating']
             results = {}
             for location in self.locations:
                 columns.append(location)
                 params = dict(self.PALCES_QUERY_PARAMS, location=location)
                 places_response = requests.get(self.GOOGLE_PLACES_API, params=params).content.decode('utf-8')
                 places = json.loads(places_response)
-                rating_buckets = {}
-                for place in [place for place in places['results'] if place['rating'] > 3]:
-                    rating = str(math.floor(place['rating']))
-                    if rating in rating_buckets:
-                        rating_buckets[rating] += 1
-                    else:
-                        rating_buckets[rating] = 1
-                results[location] = rating_buckets
 
-            csvwriter.writerow(columns)
+                results[location] = {}
+                for rating in [3, 4, 5]:
+                    results[location][str(rating)] = sum([math.floor(place['rating']) == rating for place in places['results']])
+
+            csvwriter.writerow(headers)
+
             for rating in ['3', '4', '5']:
                 row = [rating]
                 for bucket in results.values():
