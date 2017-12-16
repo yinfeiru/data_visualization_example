@@ -14,14 +14,14 @@ class CSVGenerator:
     }
 
     def generate_csv(self):
-        places_response = requests.get(self.GOOGLE_PLACES_API, params=self.PALCES_QUERY_PARAMS).content
+        places_response = requests.get(self.GOOGLE_PLACES_API, params=self.PALCES_QUERY_PARAMS).content.decode('utf-8')
         places = json.loads(places_response)
-        with tempfile.NamedTemporaryFile(delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             csvwriter = csv.writer(f)
             csvwriter.writerow(['Restaurant name', 'Rating'])
             for place in places['results']:
                 if place['rating'] > 3:
-                    csvwriter.writerow([place['name'].encode("utf-8"), place['rating']])
+                    csvwriter.writerow([place['name'].encode('utf-8'), place['rating']])
 
         return f.name
 
