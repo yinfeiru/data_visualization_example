@@ -6,6 +6,7 @@ import requests
 import tempfile
 
 class CSVGenerator:
+    VALID_RATINGS = [3, 4, 5]
     GOOGLE_PLACES_API = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
     PALCES_QUERY_PARAMS = {
         'key': os.environ['GOOGLE_API_KEY'],
@@ -37,22 +38,20 @@ class CSVGenerator:
             headers = ['Rating']
             results = {}
             for location in self.locations:
-                columns.append(location)
+                headers.append(location)
                 params = dict(self.PALCES_QUERY_PARAMS, location=location)
                 places_response = requests.get(self.GOOGLE_PLACES_API, params=params).content.decode('utf-8')
                 places = json.loads(places_response)
 
-                results[location] = {}
-                for rating in [3, 4, 5]:
-                    results[location][str(rating)] = sum([math.floor(place['rating']) == rating for place in places['results']])
+                results[location] = []
+                for rating in self.VALID_RATINGS:
+                    results[location].append(sum([math.floor(place['rating']) == rating for place in places['results']]))
 
             csvwriter.writerow(headers)
 
-            for rating in ['3', '4', '5']:
-                row = [rating]
-                for bucket in results.values():
-                    if rating in bucket:
-                        row.append(str(bucket[rating]))
+            buckets = list(results.values())
+            for index, counts in enumerate(zip(buckets[0], buckets[1])):
+                row = [self.VALID_RATINGS[index]] + list(counts)
                 csvwriter.writerow(row)
         return f.name
 
